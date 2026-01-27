@@ -1,0 +1,83 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Item {
+  id            String      @id @default(cuid())
+  name          String?
+  url           String      @unique
+  productId     String
+  itemId        String?
+  vendorItemId  String?
+  itemKey       String      @unique
+  group         String?
+  memo          String?
+  variantCursor Int         @default(0)
+  status        String      @default("IDLE")
+  lastCheckedAt DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  variants      Variant[]
+  jobs          Job[]
+  priceEvents   PriceEvent[]
+
+  @@index([productId])
+}
+
+model Variant {
+  id        String     @id @default(cuid())
+  itemId    String
+  optionKey String
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  item      Item       @relation(fields: [itemId], references: [id])
+  snapshots Snapshot[]
+
+  @@unique([itemId, optionKey])
+}
+
+model Snapshot {
+  id             String   @id @default(cuid())
+  variantId      String
+  price          Int?
+  statusCode     String
+  rawPriceText   String?
+  pageStatusCode String?
+  checkedAt      DateTime
+  createdAt      DateTime @default(now())
+  variant        Variant  @relation(fields: [variantId], references: [id])
+
+  @@index([checkedAt])
+}
+
+model PriceEvent {
+  id        String   @id @default(cuid())
+  itemId    String
+  variantId String
+  oldPrice  Int
+  newPrice  Int
+  period    String
+  createdAt DateTime @default(now())
+  item      Item     @relation(fields: [itemId], references: [id])
+  variant   Variant  @relation(fields: [variantId], references: [id])
+}
+
+model Job {
+  id           String   @id @default(cuid())
+  itemId       String
+  scheduledFor DateTime
+  status       String
+  reason       String
+  createdAt    DateTime @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+  item         Item     @relation(fields: [itemId], references: [id])
+
+  @@index([status, scheduledFor])
+}
