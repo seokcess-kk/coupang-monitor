@@ -4,6 +4,7 @@
 POST /api/items/upload-csv
 - CSV columns: name,url,group,memo
 - Deduplicate by normalized URL
+- 서버는 업로드된 URL을 정규화(canonical) 후 저장하고, dedupe는 {productId}:{itemId}:{vendorItemId} 키로 수행한다.
 
 GET /api/items
 - Returns items with computed:
@@ -31,3 +32,4 @@ POST /api/snapshots/batch
 ## Alerts
 - Trigger when new_price < previous_7d_low OR previous_30d_low
 - Send Slack webhook (if configured)
+
