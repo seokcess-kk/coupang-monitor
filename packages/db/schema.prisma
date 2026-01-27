@@ -1,0 +1,56 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Item {
+  id             String   @id @default(cuid())
+  name           String?
+  url            String   @unique
+  variantCursor  Int      @default(0)
+  createdAt      DateTime @default(now())
+  variants       Variant[]
+  jobs           Job[]
+}
+
+model Variant {
+  id        String   @id @default(cuid())
+  itemId    String
+  optionKey String
+  active    Boolean  @default(true)
+  item      Item     @relation(fields: [itemId], references: [id])
+  snapshots Snapshot[]
+  @@unique([itemId, optionKey])
+}
+
+model Snapshot {
+  id         String   @id @default(cuid())
+  variantId String
+  price      Int?
+  statusCode String
+  checkedAt  DateTime @default(now())
+  variant    Variant  @relation(fields: [variantId], references: [id])
+}
+
+model PriceEvent {
+  id         String   @id @default(cuid())
+  itemId     String
+  variantId  String
+  oldPrice   Int
+  newPrice   Int
+  period     String   // "7d" | "30d"
+  createdAt  DateTime @default(now())
+}
+
+model Job {
+  id           String   @id @default(cuid())
+  itemId       String
+  scheduledFor DateTime
+  status       String   // PENDING|DONE|FAILED
+  reason       String   // manual|scheduled
+  createdAt    DateTime @default(now())
+}
