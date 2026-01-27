@@ -10,3 +10,13 @@
 
 ## Status Codes
 OK | SOLD_OUT | TIMEOUT | FAIL_SELECTOR | BLOCK_SUSPECT
+
+## Local config
+The extension reads the following from Chrome storage (default values are used if not set):
+- `apiBaseUrl`: `http://localhost:3000`
+- `apiKey`: `dev_key_change_me`
+
+Use the Chrome devtools console on the extension service worker to set values:
+```js
+chrome.storage.local.set({ apiBaseUrl: "http://localhost:3000", apiKey: "dev_key_change_me" })
+```
