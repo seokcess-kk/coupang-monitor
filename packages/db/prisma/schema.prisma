@@ -8,25 +8,20 @@ generator client {
 }
 
 model Item {
-  id            String      @id @default(cuid())
-  name          String?
-  url           String      @unique
-  productId     String
-  itemId        String?
-  vendorItemId  String?
-  itemKey       String      @unique
-  group         String?
-  memo          String?
-  variantCursor Int         @default(0)
-  status        String      @default("IDLE")
-  lastCheckedAt DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  variants      Variant[]
-  jobs          Job[]
-  priceEvents   PriceEvent[]
-
-  @@index([productId])
+  id             String   @id @default(cuid())
+  name           String?
+  url            String   @unique
+  productId      String?
+  itemId         String?
+  vendorItemId   String?
+  dedupeKey      String?  @unique
+  group          String?
+  memo           String?
+  variantCursor  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  variants       Variant[]
+  jobs           Job[]
 }
 
 model Variant {
@@ -34,26 +29,22 @@ model Variant {
   itemId    String
   optionKey String
   active    Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  item      Item       @relation(fields: [itemId], references: [id])
+  item      Item       @relation(fields: [itemId], references: [id], onDelete: Cascade)
   snapshots Snapshot[]
-
+  events    PriceEvent[]
   @@unique([itemId, optionKey])
 }
 
 model Snapshot {
-  id             String   @id @default(cuid())
-  variantId      String
-  price          Int?
-  statusCode     String
-  rawPriceText   String?
-  pageStatusCode String?
-  checkedAt      DateTime
-  createdAt      DateTime @default(now())
-  variant        Variant  @relation(fields: [variantId], references: [id])
+  id           String   @id @default(cuid())
+  variantId    String
+  price        Int?
+  statusCode   String
+  rawPriceText String?
+  checkedAt    DateTime @default(now())
+  variant      Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@index([checkedAt])
+  @@index([variantId, checkedAt])
 }
 
 model PriceEvent {
@@ -62,22 +53,22 @@ model PriceEvent {
   variantId String
   oldPrice  Int
   newPrice  Int
-  period    String
+  period    String   // "7d" | "30d"
   createdAt DateTime @default(now())
-  item      Item     @relation(fields: [itemId], references: [id])
-  variant   Variant  @relation(fields: [variantId], references: [id])
+  variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([variantId, createdAt])
 }
 
 model Job {
   id           String   @id @default(cuid())
   itemId       String
-  scheduledFor DateTime
-  status       String
-  reason       String
+  scheduledFor DateTime @default(now())
+  status       String   @default("PENDING") // PENDING | DONE | FAILED
+  reason       String   // manual | scheduled
   createdAt    DateTime @default(now())
-  startedAt    DateTime?
-  completedAt  DateTime?
-  item         Item     @relation(fields: [itemId], references: [id])
+  updatedAt    DateTime @updatedAt
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([status, scheduledFor])
 }

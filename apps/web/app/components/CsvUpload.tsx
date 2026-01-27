@@ -1,0 +1,99 @@
+"use client";
+
+import { useState, useRef } from "react";
+
+interface UploadResult {
+  created: number;
+  skipped: number;
+  duplicatesInCsv: number;
+  errors: { row: number; message: string }[];
+}
+
+export default function CsvUpload({ onSuccess }: { onSuccess?: () => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState<UploadResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleUpload(file: File) {
+    setUploading(true);
+    setResult(null);
+    setError(null);
+
+    try {
+      const text = await file.text();
+      const res = await fetch("/api/items/upload-csv", {
+        method: "POST",
+        body: text,
+        headers: { "Content-Type": "text/csv" },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Upload failed");
+        return;
+      }
+
+      const data: UploadResult = await res.json();
+      setResult(data);
+      onSuccess?.();
+    } catch {
+      setError("Network error");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <h3 style={{ marginBottom: 12 }}>CSV Upload</h3>
+      <div
+        className="upload-area"
+        onClick={() => fileRef.current?.click()}
+      >
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleUpload(file);
+          }}
+        />
+        <p>{uploading ? "Uploading..." : "Click to select CSV file"}</p>
+        <p className="text-sm text-secondary mt-2">
+          Columns: name, url, group, memo
+        </p>
+      </div>
+
+      {result && (
+        <div className="mt-4">
+          <p>Created: <strong>{result.created}</strong></p>
+          <p>Skipped (existing): <strong>{result.skipped}</strong></p>
+          {result.duplicatesInCsv > 0 && (
+            <p>Duplicates in CSV: <strong>{result.duplicatesInCsv}</strong></p>
+          )}
+          {result.errors.length > 0 && (
+            <div className="mt-2">
+              <p style={{ color: "var(--danger)" }}>Errors:</p>
+              <ul style={{ paddingLeft: 20 }}>
+                {result.errors.map((e, i) => (
+                  <li key={i} className="text-sm">
+                    Row {e.row}: {e.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-4" style={{ color: "var(--danger)" }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}

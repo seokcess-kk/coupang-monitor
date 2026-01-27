@@ -1,12 +1,23 @@
 {
   "name": "pricewatch",
   "private": true,
-  "packageManager": "pnpm@9.1.0",
   "scripts": {
-    "dev": "pnpm -C apps/web dev",
-    "build": "pnpm -C apps/web build",
-    "lint": "pnpm -C apps/web lint",
-    "db:migrate": "pnpm -C packages/db prisma migrate dev",
-    "db:generate": "pnpm -C packages/db prisma generate"
+    "dev": "pnpm --filter @pricewatch/web dev",
+    "build": "pnpm --filter @pricewatch/web build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "pnpm -r lint",
+    "db:migrate": "pnpm --filter @pricewatch/db migrate:dev",
+    "db:studio": "pnpm --filter @pricewatch/db studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4",
+    "@vitest/coverage-v8": "^3.0.4"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=18"
   }
 }
