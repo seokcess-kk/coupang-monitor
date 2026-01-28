@@ -6,27 +6,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PriceWatch is a Coupang (Korean e-commerce) product price monitoring SaaS (MVP). It tracks option-level displayed base prices for up to 100 product URLs, maintains 7-day/30-day price lows, and sends Slack alerts on new lows. Price data is collected exclusively via a Chrome Extension (MV3) that reads the DOM — no server-side scraping.
 
+## Requirements
+
+- Node.js >= 18
+- pnpm 9.15.4 (`packageManager` field enforced)
+- PostgreSQL 17 (via Docker or Supabase)
+
 ## Commands
 
 ```bash
 pnpm i                      # Install dependencies
-pnpm dev                    # Run dev server (Next.js)
+pnpm dev                    # Run dev server (Next.js on localhost:3000)
 pnpm build                  # Build web app
-pnpm lint                   # Lint all packages
-pnpm db:migrate             # Run database migrations
+pnpm lint                   # Lint all packages (next lint for web, tsc --noEmit for extension/db)
+
+# Database
+docker compose up -d        # Start local PostgreSQL (port 5433 → 5432)
+pnpm db:migrate             # Run Prisma migrations (prisma migrate dev)
 pnpm db:studio              # Open Prisma Studio
+pnpm --filter @pricewatch/db generate  # Regenerate Prisma client after schema changes
 
-# Testing
-pnpm test                   # Run all tests (Vitest)
+# Testing (Vitest workspace mode)
+pnpm test                   # Run all tests across all packages
 pnpm test:watch             # Watch mode
-pnpm test:coverage          # Coverage report
+pnpm test:coverage          # Coverage report (v8 provider)
+pnpm test -- apps/web/__tests__/unit/csv-parser.test.ts  # Single test file
 
-# Run a single test file
-pnpm test -- apps/web/__tests__/unit/csv-parser.test.ts
-
-# Build extension
-pnpm --filter @pricewatch/extension build
+# Extension
+pnpm --filter @pricewatch/extension build  # esbuild → apps/extension/dist/
 ```
+
+### Prisma Workflow
+
+When modifying `packages/db/prisma/schema.prisma`:
+1. Edit the schema
+2. `pnpm db:migrate` — creates migration SQL and applies it
+3. Prisma client is auto-regenerated after migration
+
+For schema-only push without migration files: `pnpm --filter @pricewatch/db db:push`
 
 ## Tech Stack
 
@@ -41,9 +58,9 @@ pnpm --filter @pricewatch/extension build
 
 ### Monorepo Layout
 
-- `apps/web/` — Next.js App Router web app and REST API (dashboard, CSV import, job management)
-- `apps/extension/` — Chrome Extension MV3 browser agent that polls for jobs, opens product pages, extracts prices from the DOM, and uploads snapshots
-- `packages/db/` — Shared Prisma schema and database client
+- `apps/web/` — Next.js 15 App Router web app and REST API (dashboard, CSV import, job management). Path alias: `@/` → `apps/web/`
+- `apps/extension/` — Chrome Extension MV3 browser agent (esbuild, outputs to `dist/`). Polls for jobs, opens product pages, extracts prices from DOM, uploads snapshots
+- `packages/db/` — Shared Prisma schema, client singleton, and URL normalization. Consumed by web as `@pricewatch/db` workspace dependency
 
 ### Domain Models (packages/db/schema.prisma)
 
@@ -90,7 +107,8 @@ Tracking params (`q`, `searchId`, `rank`, `traceId`, etc.) are stripped. Dedup k
 
 ## Testing
 
-- **Framework**: Vitest (workspace mode via `vitest.workspace.ts`)
+- **Framework**: Vitest (workspace mode via `vitest.workspace.ts`, 3 workspaces: `packages/db`, `apps/web`, `apps/extension`)
+- **Config**: `globals: true` (no explicit vitest imports needed), `environment: "node"` in all workspaces
 - **Test locations**:
   - `apps/web/__tests__/` — API route and unit tests (CSV parsing, price calculation, auth, Slack alerts)
   - `apps/extension/__tests__/` — Price extraction and option parser tests
@@ -109,7 +127,12 @@ Tracking params (`q`, `searchId`, `rank`, `traceId`, etc.) are stripped. Dedup k
 
 ## Environment Variables
 
-See `.env.example` for required configuration: `DATABASE_URL`, `SLACK_WEBHOOK_URL`, `EXTENSION_API_KEY`, `DEFAULT_VARIANT_PER_RUN`, `PAGE_TIMEOUT_MS`.
+See `.env.example` for required configuration:
+- `DATABASE_URL` — PostgreSQL connection string (local Docker: `postgresql://postgres:postgres@localhost:5433/pricewatch`)
+- `SLACK_WEBHOOK_URL` — Slack Incoming Webhook for price alerts (optional, gracefully skipped if unset)
+- `EXTENSION_API_KEY` — Shared secret for extension auth (`X-API-KEY` header)
+- `DEFAULT_VARIANT_PER_RUN` — Max option variants per scrape run (default: 15)
+- `PAGE_TIMEOUT_MS` — Extension page load timeout (default: 20000)
 
 ## Reference Documentation
 
