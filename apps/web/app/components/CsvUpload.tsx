@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+
+const TEMPLATE_CSV = `name,url,group,memo
+(예시) 상품명,https://www.coupang.com/vp/products/123456?itemId=789&vendorItemId=101112,그룹명,메모`;
 
 interface UploadResult {
   created: number;
@@ -14,6 +17,16 @@ export default function CsvUpload({ onSuccess }: { onSuccess?: () => void }) {
   const [result, setResult] = useState<UploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleDownloadTemplate = useCallback(() => {
+    const blob = new Blob(["\uFEFF" + TEMPLATE_CSV], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pricewatch-template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   async function handleUpload(file: File) {
     setUploading(true);
@@ -64,6 +77,18 @@ export default function CsvUpload({ onSuccess }: { onSuccess?: () => void }) {
         <p>{uploading ? "Uploading..." : "Click to select CSV file"}</p>
         <p className="text-sm text-secondary mt-2">
           Columns: name, url, group, memo
+          {" · "}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDownloadTemplate();
+            }}
+            style={{ color: "var(--primary)", textDecoration: "underline" }}
+          >
+            템플릿 다운로드
+          </a>
         </p>
       </div>
 
