@@ -11,7 +11,21 @@ PriceWatch is a Coupang (Korean e-commerce) product price monitoring SaaS (MVP).
 ```bash
 pnpm i                      # Install dependencies
 pnpm dev                    # Run dev server (Next.js)
-pnpm prisma migrate dev     # Run database migrations
+pnpm build                  # Build web app
+pnpm lint                   # Lint all packages
+pnpm db:migrate             # Run database migrations
+pnpm db:studio              # Open Prisma Studio
+
+# Testing
+pnpm test                   # Run all tests (Vitest)
+pnpm test:watch             # Watch mode
+pnpm test:coverage          # Coverage report
+
+# Run a single test file
+pnpm test -- apps/web/__tests__/unit/csv-parser.test.ts
+
+# Build extension
+pnpm --filter @pricewatch/extension build
 ```
 
 ## Tech Stack
@@ -27,6 +41,7 @@ pnpm prisma migrate dev     # Run database migrations
 
 ### Monorepo Layout
 
+- `apps/web/` — Next.js App Router web app and REST API (dashboard, CSV import, job management)
 - `apps/extension/` — Chrome Extension MV3 browser agent that polls for jobs, opens product pages, extracts prices from the DOM, and uploads snapshots
 - `packages/db/` — Shared Prisma schema and database client
 
@@ -49,14 +64,14 @@ pnpm prisma migrate dev     # Run database migrations
 
 ### API Endpoints
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/api/items/upload-csv` | POST | CSV import with URL normalization and dedup |
-| `/api/items` | GET | List items with computed stats (current_low, low_7d, low_30d, status) |
-| `/api/items/:id` | GET | Item detail + variants + 30-day snapshots |
-| `/api/jobs/enqueue` | POST | Queue refresh jobs (all/selected, manual/scheduled) |
-| `/api/jobs/next` | GET | Extension polls for next pending job |
-| `/api/snapshots/batch` | POST | Extension submits scraped price data |
+| Endpoint | Method | Auth | Purpose |
+|---|---|---|---|
+| `/api/items/upload-csv` | POST | — | CSV import with URL normalization and dedup |
+| `/api/items` | GET | — | List items with computed stats (current_low, low_7d, low_30d, status) |
+| `/api/items/:id` | GET | — | Item detail + variants + 30-day snapshots |
+| `/api/jobs/enqueue` | POST | — | Queue refresh jobs (all/selected, manual/scheduled) |
+| `/api/jobs/next` | GET | `X-API-KEY` | Extension polls for next pending job |
+| `/api/snapshots/batch` | POST | `X-API-KEY` | Extension submits scraped price data |
 
 ### Price Extraction Rules (SCRAPER_RULES.md)
 
@@ -72,6 +87,17 @@ All user-provided URLs are normalized to canonical form before storage:
 https://www.coupang.com/vp/products/{productId}?itemId={itemId}&vendorItemId={vendorItemId}
 ```
 Tracking params (`q`, `searchId`, `rank`, `traceId`, etc.) are stripped. Dedup key: `{productId}:{itemId}:{vendorItemId}`.
+
+## Testing
+
+- **Framework**: Vitest (workspace mode via `vitest.workspace.ts`)
+- **Test locations**:
+  - `apps/web/__tests__/` — API route and unit tests (CSV parsing, price calculation, auth, Slack alerts)
+  - `apps/extension/__tests__/` — Price extraction and option parser tests
+  - `packages/db/__tests__/` — DB client and URL normalization tests
+- **Run all**: `pnpm test`
+- **Run single file**: `pnpm test -- apps/web/__tests__/unit/csv-parser.test.ts`
+- **Watch mode**: `pnpm test:watch`
 
 ## Key Constraints
 
