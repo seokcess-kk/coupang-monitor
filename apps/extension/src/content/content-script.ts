@@ -1,4 +1,5 @@
 import { extractPriceFromDOM, type PriceResult } from "./price-extractor";
+import { extractProductName } from "./name-extractor";
 import { buildOptionKey, detectOptionGroups, generateOptionCombinations, getVariantsForRun } from "./option-iterator";
 
 interface ScrapeMessage {
@@ -12,6 +13,7 @@ interface ScrapeResult {
   price: number | null;
   status_code: string;
   raw_price_text?: string;
+  product_name?: string;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -23,11 +25,41 @@ function randomDebounce(): number {
   return 300 + Math.random() * 500;
 }
 
+// Wait for price elements to appear (max 3 seconds)
+async function waitForPriceElements(maxWaitMs: number = 3000): Promise<void> {
+  const priceSelectors = [
+    ".prod-sale-price",
+    ".total-price",
+    "[class*='sale-price']",
+    ".prod-price",
+    "[class*='price']",
+  ];
+
+  const startTime = Date.now();
+  const checkInterval = 200;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    for (const selector of priceSelectors) {
+      const el = document.querySelector(selector);
+      if (el && el.textContent?.match(/[\d,]+/)) {
+        // Found a price element with numeric content
+        return;
+      }
+    }
+    await sleep(checkInterval);
+  }
+}
+
 async function scrape(
   cursor: number,
   perRun: number
-): Promise<{ results: ScrapeResult[]; nextCursor: number; pageStatusCode: string }> {
+): Promise<{ results: ScrapeResult[]; nextCursor: number; pageStatusCode: string; productName: string | null }> {
+  // Extract product name once per page
+  const productName = extractProductName(document);
   const results: ScrapeResult[] = [];
+
+  // Wait for price elements to be rendered
+  await waitForPriceElements();
 
   // Detect option groups
   const optionGroups = detectOptionGroups(document);
@@ -40,12 +72,14 @@ async function scrape(
       price: priceResult.price,
       status_code: priceResult.statusCode,
       raw_price_text: priceResult.rawPriceText || undefined,
+      product_name: productName || undefined,
     });
 
     return {
       results,
       nextCursor: 0,
       pageStatusCode: priceResult.statusCode,
+      productName,
     };
   }
 
@@ -67,6 +101,8 @@ async function scrape(
       price: priceResult.price,
       status_code: priceResult.statusCode,
       raw_price_text: priceResult.rawPriceText || undefined,
+      // Include product name on first result only
+      ...(results.length === 0 ? { product_name: productName || undefined } : {}),
     });
   }
 
@@ -76,7 +112,7 @@ async function scrape(
       ? "SOLD_OUT"
       : "FAIL_SELECTOR";
 
-  return { results, nextCursor, pageStatusCode };
+  return { results, nextCursor, pageStatusCode, productName };
 }
 
 async function selectOptions(
@@ -101,19 +137,24 @@ async function selectOptions(
 }
 
 // Listen for messages from service worker
-chrome.runtime.onMessage.addListener((message: ScrapeMessage, _sender, sendResponse) => {
-  if (message.type !== "START_SCRAPE") return;
+chrome.runtime.onMessage.addListener((message: ScrapeMessage, _sender, _sendResponse) => {
+  if (message.type !== "START_SCRAPE") return false;
 
-  scrape(message.variantCursor, message.variantsPerRun)
-    .then(({ results, nextCursor, pageStatusCode }) => {
+  // Execute async scraping without blocking the message channel
+  (async () => {
+    try {
+      const { results, nextCursor, pageStatusCode, productName } = await scrape(
+        message.variantCursor,
+        message.variantsPerRun
+      );
       chrome.runtime.sendMessage({
         type: "SCRAPE_RESULT",
         results,
         variantCursor: nextCursor,
         pageStatusCode,
+        productName,
       });
-    })
-    .catch((err) => {
+    } catch (err) {
       console.error("[PriceWatch] Scrape error:", err);
       chrome.runtime.sendMessage({
         type: "SCRAPE_RESULT",
@@ -127,7 +168,10 @@ chrome.runtime.onMessage.addListener((message: ScrapeMessage, _sender, sendRespo
         variantCursor: message.variantCursor,
         pageStatusCode: "FAIL_SELECTOR",
       });
-    });
+    }
+  })();
 
-  return true;
+  // Don't return true - we're using sendMessage, not sendResponse
+  return false;
 });
+

@@ -19,6 +19,7 @@ interface BatchBody {
   page_status_code: string;
   checked_at: string;
   variant_cursor?: number;
+  product_name?: string | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -51,6 +52,14 @@ export async function POST(request: NextRequest) {
         { error: "Item not found" },
         { status: 404 }
       );
+    }
+
+    // Update item name if currently null and product_name was extracted
+    if (item.name === null && body.product_name) {
+      await prisma.item.update({
+        where: { id: body.item_id },
+        data: { name: body.product_name },
+      });
     }
 
     let snapshotsCreated = 0;

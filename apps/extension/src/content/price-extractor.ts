@@ -140,20 +140,29 @@ function extractAllPrices(html: string): PriceCandidate[] {
 
 // DOM-based extraction for actual content script usage
 export function extractPriceFromDOM(document: Document): PriceResult {
-  // Check for sold out
+  console.log("[PriceWatch] Starting price extraction...");
+  console.log("[PriceWatch] Page URL:", document.location?.href);
+  console.log("[PriceWatch] Document ready state:", document.readyState);
+
+  // Check for sold out - expanded selector list
   const soldOutEl = document.querySelector(
-    ".oos-label, .out-of-stock, [class*='sold-out']"
+    ".oos-label, .out-of-stock, [class*='sold-out'], [class*='soldout'], .prod-not-available, [class*='품절']"
   );
   if (soldOutEl) {
+    console.log("[PriceWatch] Found sold out element:", soldOutEl.className);
     return { price: null, statusCode: "SOLD_OUT", rawPriceText: "" };
   }
 
-  const purchaseBtn = document.querySelector(".prod-buy-btn");
+  // Check purchase button for sold out text
+  const purchaseBtn = document.querySelector(".prod-buy-btn, .buy-button, [class*='purchase'], [class*='buy-btn']");
   if (purchaseBtn) {
     const btnText = purchaseBtn.textContent ?? "";
-    if (btnText.includes("품절") || btnText.includes("일시품절")) {
+    console.log("[PriceWatch] Purchase button text:", btnText.substring(0, 50));
+    if (btnText.includes("품절") || btnText.includes("일시품절") || btnText.includes("재입고")) {
       return { price: null, statusCode: "SOLD_OUT", rawPriceText: "" };
     }
+  } else {
+    console.log("[PriceWatch] No purchase button found");
   }
 
   // Priority A: Look for 쿠팡판매가
@@ -178,20 +187,38 @@ export function extractPriceFromDOM(document: Document): PriceResult {
     }
   }
 
-  // Priority B: Find main price block
+  // Priority B: Find main price block - expanded selector list
   const priceSelectors = [
+    // Primary selectors
     ".prod-sale-price .total-price strong",
     ".prod-sale-price strong",
     ".total-price strong",
+    // Fallback selectors
     "[class*='sale-price'] strong",
     ".prod-price strong",
+    "[class*='final-price'] strong",
+    "[class*='finalPrice'] strong",
+    // Additional Coupang-specific selectors
+    ".prod-coupon-price .total-price strong",
+    ".prod-origin-price strong",
+    "[class*='price-value']",
+    "[class*='priceValue']",
+    // Rocket delivery price
+    ".prod-pdd-price strong",
+    // Generic fallbacks
+    ".price strong",
+    "strong.price",
   ];
+
+  console.log("[PriceWatch] Trying", priceSelectors.length, "price selectors...");
 
   for (const selector of priceSelectors) {
     const el = document.querySelector(selector);
     if (el) {
+      console.log("[PriceWatch] Found element with selector:", selector, "Text:", el.textContent?.substring(0, 30));
       const price = parseKrwPrice(el.textContent ?? "");
       if (price !== null) {
+        console.log("[PriceWatch] Successfully extracted price:", price);
         return {
           price,
           statusCode: "OK",
@@ -200,6 +227,11 @@ export function extractPriceFromDOM(document: Document): PriceResult {
       }
     }
   }
+
+  // Log available elements for debugging
+  const bodyText = document.body?.innerText?.substring(0, 500);
+  console.log("[PriceWatch] FAIL_SELECTOR - Page body preview:", bodyText);
+  console.log("[PriceWatch] All strong elements:", document.querySelectorAll("strong").length);
 
   return { price: null, statusCode: "FAIL_SELECTOR", rawPriceText: "" };
 }

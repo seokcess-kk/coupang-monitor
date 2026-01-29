@@ -3,21 +3,35 @@
   "name": "PriceWatch - Coupang Monitor",
   "version": "0.1.0",
   "description": "Coupang product price monitoring agent",
-  "permissions": ["tabs", "activeTab", "storage", "alarms"],
-  "host_permissions": ["https://www.coupang.com/*", "https://m.coupang.com/*"],
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "alarms",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.coupang.com/*",
+    "https://m.coupang.com/*"
+  ],
   "background": {
-    "service_worker": "dist/service-worker.js",
+    "service_worker": "service-worker.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.coupang.com/vp/products/*", "https://m.coupang.com/vm/products/*"],
-      "js": ["dist/content-script.js"],
+      "matches": [
+        "https://www.coupang.com/vp/products/*",
+        "https://m.coupang.com/vm/products/*"
+      ],
+      "js": [
+        "content-script.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "action": {
-    "default_popup": "src/popup/popup.html",
+    "default_popup": "popup.html",
     "default_title": "PriceWatch"
   }
 }

@@ -86,3 +86,37 @@ export async function GET(
     );
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Check if item exists
+    const item = await prisma.item.findUnique({
+      where: { id },
+    });
+
+    if (!item) {
+      return NextResponse.json(
+        { error: "Item not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete item (cascades to variants and snapshots due to schema)
+    await prisma.item.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Item delete error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
