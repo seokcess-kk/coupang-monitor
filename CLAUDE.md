@@ -83,12 +83,22 @@ For schema-only push without migration files: `pnpm --filter @pricewatch/db db:p
 
 | Endpoint | Method | Auth | Purpose |
 |---|---|---|---|
-| `/api/items/upload-csv` | POST | — | CSV import with URL normalization and dedup |
+| `/api/health` | GET | — | Health check |
 | `/api/items` | GET | — | List items with computed stats (current_low, low_7d, low_30d, status) |
-| `/api/items/:id` | GET | — | Item detail + variants + 30-day snapshots |
+| `/api/items/[id]` | GET | — | Item detail + variants + 30-day snapshots |
+| `/api/items/upload-csv` | POST | — | CSV import with URL normalization and dedup |
 | `/api/jobs/enqueue` | POST | — | Queue refresh jobs (all/selected, manual/scheduled) |
 | `/api/jobs/next` | GET | `X-API-KEY` | Extension polls for next pending job |
 | `/api/snapshots/batch` | POST | `X-API-KEY` | Extension submits scraped price data |
+
+### Extension Structure
+
+- `src/background/service-worker.ts` — Job polling, tab management, API communication
+- `src/content/content-script.ts` — Main orchestrator injected into product pages
+- `src/content/price-extractor.ts` — DOM price extraction logic
+- `src/content/option-iterator.ts` — Option variant iteration and cursor management
+- `src/content/name-extractor.ts` — Product name extraction
+- `src/popup/popup.ts` — Extension popup UI
 
 ### Price Extraction Rules (SCRAPER_RULES.md)
 
@@ -113,9 +123,6 @@ Tracking params (`q`, `searchId`, `rank`, `traceId`, etc.) are stripped. Dedup k
   - `apps/web/__tests__/` — API route and unit tests (CSV parsing, price calculation, auth, Slack alerts)
   - `apps/extension/__tests__/` — Price extraction and option parser tests
   - `packages/db/__tests__/` — DB client and URL normalization tests
-- **Run all**: `pnpm test`
-- **Run single file**: `pnpm test -- apps/web/__tests__/unit/csv-parser.test.ts`
-- **Watch mode**: `pnpm test:watch`
 
 ## Key Constraints
 
