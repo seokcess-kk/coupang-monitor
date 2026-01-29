@@ -1,33 +1,9 @@
-interface JobResponse {
-  jobId: string;
-  itemId: string;
-  url: string;
-  name: string | null;
-  variantCursor: number;
-  variantsPerRun: number;
-  pageTimeoutMs: number;
-}
-
-interface ScrapeResult {
-  option_key: string;
-  price: number | null;
-  status_code: string;
-  raw_price_text?: string;
-  product_name?: string;
-}
-
-interface ScrapingResponse {
-  results: ScrapeResult[];
-  productName: string | null;
-  pageStatusCode: string;
-}
-
-interface ContentScriptResponse {
-  results: ScrapeResult[];
-  variantCursor: number;
-  pageStatusCode: string;
-  productName?: string | null;
-}
+import type {
+  JobResponse,
+  ScrapeResult,
+  ScrapingResponse,
+  ContentScriptResponse,
+} from "../types";
 
 let isPolling = false;
 let apiBaseUrl = "";

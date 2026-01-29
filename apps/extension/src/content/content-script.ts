@@ -1,19 +1,12 @@
 import { extractPriceFromDOM, type PriceResult } from "./price-extractor";
 import { extractProductName } from "./name-extractor";
 import { buildOptionKey, detectOptionGroups, generateOptionCombinations, getVariantsForRun } from "./option-iterator";
+import type { ScrapeResult } from "../types";
 
 interface ScrapeMessage {
   type: "START_SCRAPE";
   variantCursor: number;
   variantsPerRun: number;
-}
-
-interface ScrapeResult {
-  option_key: string;
-  price: number | null;
-  status_code: string;
-  raw_price_text?: string;
-  product_name?: string;
 }
 
 function sleep(ms: number): Promise<void> {

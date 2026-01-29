@@ -2,63 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-
-interface VariantRow {
-  id: string;
-  optionKey: string;
-  active: boolean;
-  currentPrice: number | null;
-  currentStatus: string;
-  lastCheckedAt: string | null;
-  snapshotCount: number;
-}
-
-interface SnapshotRow {
-  id: string;
-  variantId: string;
-  optionKey: string;
-  price: number | null;
-  statusCode: string;
-  checkedAt: string;
-}
-
-interface ItemData {
-  id: string;
-  name: string | null;
-  url: string;
-  group: string | null;
-  memo: string | null;
-  currentLow: number | null;
-  lowestVariant: string | null;
-  low7d: number | null;
-  low30d: number | null;
-  lastCheckedAt: string | null;
-  status: string;
-  variants: VariantRow[];
-  snapshots: SnapshotRow[];
-}
-
-function formatPrice(price: number | null): string {
-  if (price === null) return "-";
-  return price.toLocaleString("ko-KR") + "원";
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleString("ko-KR");
-}
-
-function statusBadge(status: string) {
-  const cls =
-    status === "OK"
-      ? "badge-ok"
-      : status === "SOLD_OUT"
-        ? "badge-sold-out"
-        : status === "UNKNOWN"
-          ? "badge-unknown"
-          : "badge-error";
-  return <span className={`badge ${cls}`}>{status}</span>;
-}
+import type { ItemData } from "@/lib/types";
+import { formatPrice, formatDateFull as formatDate } from "@/lib/format";
+import { StatusBadge } from "@/app/components/StatusBadge";
 
 export default function ItemDetail({ itemId }: { itemId: string }) {
   const [item, setItem] = useState<ItemData | null>(null);
@@ -127,7 +73,7 @@ export default function ItemDetail({ itemId }: { itemId: string }) {
           </div>
           <div>
             <span className="text-sm text-secondary">Status</span>
-            <p className="mt-2">{statusBadge(item.status)}</p>
+            <p className="mt-2"><StatusBadge status={item.status} /></p>
           </div>
         </div>
       </div>
@@ -152,7 +98,7 @@ export default function ItemDetail({ itemId }: { itemId: string }) {
               <tr key={v.id}>
                 <td>{v.optionKey}</td>
                 <td className="price">{formatPrice(v.currentPrice)}</td>
-                <td>{statusBadge(v.currentStatus)}</td>
+                <td><StatusBadge status={v.currentStatus} /></td>
                 <td className="text-sm">{formatDate(v.lastCheckedAt)}</td>
                 <td>{v.snapshotCount}</td>
               </tr>
@@ -188,7 +134,7 @@ export default function ItemDetail({ itemId }: { itemId: string }) {
                 <td className="text-sm">{formatDate(s.checkedAt)}</td>
                 <td className="text-sm">{s.optionKey}</td>
                 <td className="price">{formatPrice(s.price)}</td>
-                <td>{statusBadge(s.statusCode)}</td>
+                <td><StatusBadge status={s.statusCode} /></td>
               </tr>
             ))}
             {item.snapshots.length === 0 && (

@@ -1,3 +1,5 @@
+import { formatPriceNumber } from "./format";
+
 interface SlackAlertInput {
   itemName: string;
   optionKey: string;
@@ -5,10 +7,6 @@ interface SlackAlertInput {
   newPrice: number;
   period: "7d" | "30d" | string;
   url: string;
-}
-
-function formatPrice(price: number): string {
-  return price.toLocaleString("ko-KR");
 }
 
 function periodLabel(period: string): string {
@@ -24,7 +22,7 @@ export function formatSlackMessage(input: SlackAlertInput): string {
   return [
     `*${input.itemName}* — ${periodLabel(input.period)} 신저가!`,
     `옵션: ${input.optionKey}`,
-    `이전 최저: ${formatPrice(input.oldPrice)}원 → *${formatPrice(input.newPrice)}원* (-${formatPrice(diff)}원, -${pct}%)`,
+    `이전 최저: ${formatPriceNumber(input.oldPrice)}원 → *${formatPriceNumber(input.newPrice)}원* (-${formatPriceNumber(diff)}원, -${pct}%)`,
     `<${input.url}|쿠팡에서 보기>`,
   ].join("\n");
 }

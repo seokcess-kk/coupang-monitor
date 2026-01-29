@@ -5,20 +5,7 @@ import ItemTable from "./ItemTable";
 import CsvUpload from "./CsvUpload";
 import RefreshButton from "./RefreshButton";
 import { ToastProvider, useToast } from "./Toast";
-
-interface ItemRow {
-  id: string;
-  name: string | null;
-  url: string;
-  group: string | null;
-  currentLow: number | null;
-  lowestVariant: string | null;
-  low7d: number | null;
-  low30d: number | null;
-  lastCheckedAt: string | null;
-  status: string;
-  variantCount: number;
-}
+import type { ItemRow } from "@/lib/types";
 
 function DashboardContent() {
   const [items, setItems] = useState<ItemRow[]>([]);

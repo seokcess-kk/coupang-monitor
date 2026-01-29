@@ -2,48 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-
-interface ItemRow {
-  id: string;
-  name: string | null;
-  url: string;
-  group: string | null;
-  currentLow: number | null;
-  lowestVariant: string | null;
-  low7d: number | null;
-  low30d: number | null;
-  lastCheckedAt: string | null;
-  status: string;
-  variantCount: number;
-}
-
-function formatPrice(price: number | null): string {
-  if (price === null) return "-";
-  return price.toLocaleString("ko-KR") + "원";
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  return d.toLocaleString("ko-KR", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function statusBadge(status: string) {
-  const cls =
-    status === "OK"
-      ? "badge-ok"
-      : status === "SOLD_OUT"
-        ? "badge-sold-out"
-        : status === "UNKNOWN"
-          ? "badge-unknown"
-          : "badge-error";
-  return <span className={`badge ${cls}`}>{status}</span>;
-}
+import type { ItemRow } from "@/lib/types";
+import { formatPrice, formatDate } from "@/lib/format";
+import { StatusBadge } from "./StatusBadge";
 
 export default function ItemTable({
   items,
@@ -116,7 +77,7 @@ export default function ItemTable({
               <td className="price">{formatPrice(item.low7d)}</td>
               <td className="price">{formatPrice(item.low30d)}</td>
               <td className="text-sm">{item.lowestVariant || "-"}</td>
-              <td>{statusBadge(item.status)}</td>
+              <td><StatusBadge status={item.status} /></td>
               <td>{item.variantCount}</td>
               <td className="text-sm">{formatDate(item.lastCheckedAt)}</td>
               <td>
