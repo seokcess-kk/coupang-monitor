@@ -62,13 +62,43 @@ For schema-only push without migration files: `pnpm --filter @pricewatch/db db:p
 - `apps/extension/` — Chrome Extension MV3 browser agent (esbuild, outputs to `dist/`). Polls for jobs, opens product pages, extracts prices from DOM, uploads snapshots
 - `packages/db/` — Shared Prisma schema, client singleton, and URL normalization. Consumed by web as `@pricewatch/db` workspace dependency
 
+### Shared Types
+
+- `apps/web/lib/types.ts` — Dashboard/API response types (`ItemRow`, `VariantRow`, `SnapshotRow`, `ItemData`)
+- `apps/extension/src/types.ts` — Extension-server communication types (`ScrapeResult`, `JobResponse`, `ScrapingResponse`)
+
+### Web Utilities (apps/web/lib/)
+
+- `auth.ts` — API key validation for extension authentication
+- `csv-parser.ts` — CSV file parsing and validation
+- `price-calculation.ts` — 7D/30D low price computation logic
+- `price-event.ts` — PriceEvent creation and detection
+- `slack-alert.ts` — Slack webhook notification
+- `format.ts` — Price/date formatting helpers
+
 ### Domain Models (packages/db/schema.prisma)
 
 - **Item** — A tracked product URL (deduplicated by normalized URL)
 - **Variant** — An option combination within an Item (unique by `itemId + optionKey`)
 - **Snapshot** — A price observation for a variant at a point in time
 - **PriceEvent** — Fired when a new 7D or 30D price low is detected
-- **Job** — Refresh queue entry (PENDING/DONE/FAILED, manual/scheduled)
+- **Job** — Refresh queue entry with status lifecycle (see Job State Machine below)
+
+### Job State Machine
+
+Jobs follow a state lifecycle with automatic stale recovery:
+
+```
+PENDING → IN_PROGRESS → DONE
+                     ↘ FAILED
+```
+
+- `PENDING`: Waiting to be picked up by extension
+- `IN_PROGRESS`: Extension is processing (set by `/api/jobs/next`)
+- `DONE`: Successfully completed
+- `FAILED`: Scraping failed
+
+**Stale Job Recovery**: Jobs stuck in `IN_PROGRESS` for >10 minutes are automatically reset to `PENDING` by the `/api/jobs/next` endpoint. This prevents crawl failures when extension crashes or disconnects.
 
 ### Data Flow
 
@@ -81,15 +111,17 @@ For schema-only push without migration files: `pnpm --filter @pricewatch/db db:p
 
 ### API Endpoints
 
+See `API_SPEC.md` for full specification. Key endpoints:
+
 | Endpoint | Method | Auth | Purpose |
 |---|---|---|---|
-| `/api/health` | GET | — | Health check |
-| `/api/items` | GET | — | List items with computed stats (current_low, low_7d, low_30d, status) |
-| `/api/items/[id]` | GET | — | Item detail + variants + 30-day snapshots |
-| `/api/items/upload-csv` | POST | — | CSV import with URL normalization and dedup |
-| `/api/jobs/enqueue` | POST | — | Queue refresh jobs (all/selected, manual/scheduled) |
-| `/api/jobs/next` | GET | `X-API-KEY` | Extension polls for next pending job |
-| `/api/snapshots/batch` | POST | `X-API-KEY` | Extension submits scraped price data |
+| `/api/items` | GET | — | List items with computed stats |
+| `/api/items/[id]` | GET | — | Item detail + variants + snapshots |
+| `/api/items/upload-csv` | POST | — | CSV import |
+| `/api/jobs/enqueue` | POST | — | Queue refresh jobs |
+| `/api/jobs/next` | GET | `X-API-KEY` | Extension polls for next job (+ stale recovery) |
+| `/api/jobs/status` | GET | — | Job queue statistics (pending/done/failed counts) |
+| `/api/snapshots/batch` | POST | `X-API-KEY` | Extension submits scraped data |
 
 ### Extension Structure
 
