@@ -189,7 +189,16 @@ export function extractPriceFromDOM(document: Document): PriceResult {
 
   // Priority B: Find main price block - expanded selector list
   const priceSelectors = [
-    // Primary selectors
+    // New Coupang selectors (최신 페이지 HTML에서 확인)
+    ".final-price-amount",
+    ".sales-price-amount",
+    ".price-amount.final-price-amount",
+    ".price-amount.sales-price-amount",
+    ".final-price .price-amount",
+    ".sales-price .price-amount",
+    ".price-container .final-price-amount",
+    ".price-container .sales-price-amount",
+    // Primary selectors (기존)
     ".prod-sale-price .total-price strong",
     ".prod-sale-price strong",
     ".total-price strong",

@@ -4,13 +4,25 @@ import { computeItemStats } from "@/lib/price-calculation";
 
 export async function GET() {
   try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
     const items = await prisma.item.findMany({
       include: {
         variants: {
-          include: {
+          select: {
+            id: true,
+            optionKey: true,
             snapshots: {
+              where: {
+                checkedAt: { gte: thirtyDaysAgo },
+              },
               orderBy: { checkedAt: "desc" },
-              take: 100,
+              select: {
+                variantId: true,
+                price: true,
+                statusCode: true,
+                checkedAt: true,
+              },
             },
           },
         },

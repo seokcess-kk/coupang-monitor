@@ -1,17 +1,29 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import ItemTable from "./ItemTable";
+import ItemTableSkeleton from "./ItemTableSkeleton";
 import CsvUpload from "./CsvUpload";
+import CrawlStatus from "./CrawlStatus";
 import RefreshButton from "./RefreshButton";
 import { ToastProvider, useToast } from "./Toast";
 import type { ItemRow } from "@/lib/types";
+
+interface JobStatus {
+  pending: number;
+  done: number;
+  failed: number;
+  total: number;
+}
 
 function DashboardContent() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [jobStatus, setJobStatus] = useState<JobStatus>({ pending: 0, done: 0, failed: 0, total: 0 });
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const { showToast } = useToast();
 
   const fetchItems = useCallback(async () => {
@@ -28,9 +40,60 @@ function DashboardContent() {
     }
   }, [showToast]);
 
+  const fetchJobStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/jobs/status");
+      if (res.ok) {
+        const data: JobStatus = await res.json();
+        setJobStatus(data);
+        return data;
+      }
+    } catch {
+      // 조용히 실패
+    }
+    return null;
+  }, []);
+
+  // 초기 로드
   useEffect(() => {
     fetchItems();
-  }, [fetchItems]);
+    fetchJobStatus();
+  }, [fetchItems, fetchJobStatus]);
+
+  // 크롤링 중일 때 자동 폴링
+  useEffect(() => {
+    if (jobStatus.pending > 0 && !isPolling) {
+      setIsPolling(true);
+    }
+
+    if (isPolling) {
+      pollingRef.current = setInterval(async () => {
+        const status = await fetchJobStatus();
+        await fetchItems();
+
+        if (status && status.pending === 0) {
+          setIsPolling(false);
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          showToast("크롤링 완료!", "success");
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [isPolling, jobStatus.pending, fetchJobStatus, fetchItems, showToast]);
+
+  const startPolling = useCallback(() => {
+    setIsPolling(true);
+    fetchJobStatus();
+  }, [fetchJobStatus]);
 
   const handleDelete = async (id: string) => {
     // Optimistic update
@@ -122,13 +185,24 @@ function DashboardContent() {
             setShowUpload(false);
             showToast("Items uploaded successfully", "success");
           }}
+          onCrawlStart={() => {
+            startPolling();
+            showToast("크롤링을 시작합니다...", "success");
+          }}
+        />
+      )}
+
+      {isPolling && (
+        <CrawlStatus
+          pending={jobStatus.pending}
+          done={jobStatus.done}
+          failed={jobStatus.failed}
+          total={jobStatus.total}
         />
       )}
 
       {loading ? (
-        <div className="card" style={{ textAlign: "center", padding: 48 }}>
-          <p className="text-secondary">Loading...</p>
-        </div>
+        <ItemTableSkeleton />
       ) : (
         <ItemTable items={filteredItems} onDelete={handleDelete} />
       )}

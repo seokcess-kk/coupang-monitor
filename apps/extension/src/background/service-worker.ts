@@ -1,7 +1,5 @@
 import type {
   JobResponse,
-  ScrapeResult,
-  ScrapingResponse,
   ContentScriptResponse,
 } from "../types";
 
@@ -68,171 +66,22 @@ async function uploadResults(
   }
 }
 
-// Inline scraping function - this runs in the page context
-function scrapePageContent(): ScrapingResponse {
-  // Extract product name
-  let productName: string | null = null;
-  const nameSelectors = [
-    ".prod-buy-header h1",
-    ".prod-buy-header__title",
-    "h1.prod-title",
-    "[class*='product-title']",
-    "h1[class*='title']",
-    ".product-name h1",
-    "h1",
-  ];
+// Pending scrape result handler
+let pendingScrapeResolve: ((response: ContentScriptResponse) => void) | null = null;
 
-  for (const selector of nameSelectors) {
-    const el = document.querySelector(selector);
-    if (el?.textContent?.trim()) {
-      productName = el.textContent.trim();
-      break;
-    }
+// Listen for scrape results from content script
+chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+  if (message.type === "SCRAPE_RESULT" && pendingScrapeResolve) {
+    pendingScrapeResolve({
+      results: message.results,
+      variantCursor: message.variantCursor,
+      pageStatusCode: message.pageStatusCode,
+      productName: message.productName,
+    });
+    pendingScrapeResolve = null;
   }
-
-  // Fallback to document title
-  if (!productName && document.title) {
-    const titleParts = document.title.split(" - ");
-    productName = titleParts[0]?.trim() || null;
-  }
-
-  // Check for sold out
-  const soldOutSelectors = [
-    ".oos-label",
-    ".out-of-stock",
-    "[class*='sold-out']",
-    "[class*='soldout']",
-    ".prod-not-available",
-  ];
-
-  for (const selector of soldOutSelectors) {
-    if (document.querySelector(selector)) {
-      return {
-        results: [{
-          option_key: "default",
-          price: null,
-          status_code: "SOLD_OUT",
-          product_name: productName || undefined,
-        }],
-        productName,
-        pageStatusCode: "SOLD_OUT",
-      };
-    }
-  }
-
-  // Check purchase button text
-  const buyBtn = document.querySelector(".prod-buy-btn, [class*='buy-btn']");
-  if (buyBtn?.textContent) {
-    const btnText = buyBtn.textContent;
-    if (btnText.includes("품절") || btnText.includes("일시품절") || btnText.includes("재입고")) {
-      return {
-        results: [{
-          option_key: "default",
-          price: null,
-          status_code: "SOLD_OUT",
-          product_name: productName || undefined,
-        }],
-        productName,
-        pageStatusCode: "SOLD_OUT",
-      };
-    }
-  }
-
-  // Parse KRW price from text - requires "원" suffix
-  function parseKrwPrice(text: string): number | null {
-    // Must contain "원" to be a valid price
-    if (!text.includes("원")) return null;
-
-    // Extract number before "원"
-    const match = text.match(/([\d,]+)\s*원/);
-    if (!match) return null;
-
-    const numStr = match[1].replace(/,/g, "");
-    const parsed = parseInt(numStr, 10);
-
-    return isNaN(parsed) || parsed <= 0 ? null : parsed;
-  }
-
-  // Try to extract price from specific selectors first
-  // Priority: final-price (와우할인가) > sales-price (쿠팡판매가) > original-price
-  const priceSelectors = [
-    // New Coupang selectors (from actual page HTML)
-    ".final-price-amount",
-    ".sales-price-amount",
-    ".price-amount.final-price-amount",
-    ".price-amount.sales-price-amount",
-    ".final-price .price-amount",
-    ".sales-price .price-amount",
-    ".price-container .final-price-amount",
-    ".price-container .sales-price-amount",
-    // Legacy selectors
-    ".prod-sale-price .total-price strong",
-    ".prod-sale-price strong",
-    ".total-price strong",
-    "[class*='sale-price'] strong",
-    ".prod-price strong",
-    "[class*='final-price'] strong",
-    ".prod-coupon-price .total-price strong",
-    ".prod-origin-price strong",
-    "[class*='price-value']",
-    ".prod-pdd-price strong",
-  ];
-
-  for (const selector of priceSelectors) {
-    const el = document.querySelector(selector);
-    if (el?.textContent) {
-      const price = parseKrwPrice(el.textContent);
-      if (price !== null) {
-        return {
-          results: [{
-            option_key: "default",
-            price,
-            status_code: "OK",
-            raw_price_text: el.textContent,
-            product_name: productName || undefined,
-          }],
-          productName,
-          pageStatusCode: "OK",
-        };
-      }
-    }
-  }
-
-  // Fallback: search within price-related containers only
-  const priceContainers = document.querySelectorAll("[class*='price'], .prod-buy-header");
-  for (const container of priceContainers) {
-    const strongElements = container.querySelectorAll("strong");
-    for (const el of strongElements) {
-      const text = el.textContent || "";
-      const price = parseKrwPrice(text);
-      if (price !== null) {
-        return {
-          results: [{
-            option_key: "default",
-            price,
-            status_code: "OK",
-            raw_price_text: text,
-            product_name: productName || undefined,
-          }],
-          productName,
-          pageStatusCode: "OK",
-        };
-      }
-    }
-  }
-
-  // Failed to extract
-  return {
-    results: [{
-      option_key: "default",
-      price: null,
-      status_code: "FAIL_SELECTOR",
-      product_name: productName || undefined,
-    }],
-    productName,
-    pageStatusCode: "FAIL_SELECTOR",
-  };
-}
+  return false;
+});
 
 async function processJob(job: JobResponse): Promise<void> {
   return new Promise((resolve) => {
@@ -248,6 +97,7 @@ async function processJob(job: JobResponse): Promise<void> {
 
       // Set up timeout
       timeoutId = setTimeout(async () => {
+        pendingScrapeResolve = null;
         await uploadResults(job, {
           results: [{
             option_key: "default",
@@ -261,7 +111,7 @@ async function processJob(job: JobResponse): Promise<void> {
         resolve();
       }, job.pageTimeoutMs);
 
-      // Wait for page to load, then execute inline script
+      // Wait for page to load, then send message to content script
       chrome.tabs.onUpdated.addListener(function onUpdated(
         updatedTabId,
         changeInfo
@@ -272,24 +122,32 @@ async function processJob(job: JobResponse): Promise<void> {
         // Wait a bit for dynamic content to load
         setTimeout(async () => {
           try {
-            // Execute inline scraping function
-            const results = await chrome.scripting.executeScript({
-              target: { tabId },
-              func: scrapePageContent,
+            // Set up promise to receive result from content script
+            const scrapePromise = new Promise<ContentScriptResponse>((resolveResult) => {
+              pendingScrapeResolve = resolveResult;
             });
+
+            // Send message to content script to start scraping
+            await chrome.tabs.sendMessage(tabId, {
+              type: "START_SCRAPE",
+              variantCursor: job.variantCursor,
+              variantsPerRun: job.variantsPerRun,
+            });
+
+            // Wait for result with a timeout
+            const scrapeTimeout = 10000; // 10 seconds for scraping
+            const result = await Promise.race([
+              scrapePromise,
+              new Promise<null>((_, reject) =>
+                setTimeout(() => reject(new Error("Scrape timeout")), scrapeTimeout)
+              ),
+            ]);
 
             clearTimeout(timeoutId);
 
-            if (results && results[0]?.result) {
-              const scrapeData = results[0].result as ScrapingResponse;
-              await uploadResults(job, {
-                results: scrapeData.results,
-                variantCursor: 0,
-                pageStatusCode: scrapeData.pageStatusCode,
-                productName: scrapeData.productName,
-              });
+            if (result) {
+              await uploadResults(job, result);
             } else {
-              // No result
               await uploadResults(job, {
                 results: [{
                   option_key: "default",
@@ -301,8 +159,9 @@ async function processJob(job: JobResponse): Promise<void> {
               });
             }
           } catch (err) {
-            console.error("[PriceWatch] Script execution failed:", err);
+            console.error("[PriceWatch] Scraping failed:", err);
             clearTimeout(timeoutId);
+            pendingScrapeResolve = null;
             await uploadResults(job, {
               results: [{
                 option_key: "default",

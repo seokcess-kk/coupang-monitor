@@ -12,7 +12,12 @@ interface UploadResult {
   errors: { row: number; message: string }[];
 }
 
-export default function CsvUpload({ onSuccess }: { onSuccess?: () => void }) {
+interface CsvUploadProps {
+  onSuccess?: () => void;
+  onCrawlStart?: () => void;
+}
+
+export default function CsvUpload({ onSuccess, onCrawlStart }: CsvUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +54,21 @@ export default function CsvUpload({ onSuccess }: { onSuccess?: () => void }) {
 
       const data: UploadResult = await res.json();
       setResult(data);
+
+      // 새로 생성된 items가 있으면 자동 크롤링 시작
+      if (data.created > 0) {
+        try {
+          await fetch("/api/jobs/enqueue", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode: "all", reason: "manual" }),
+          });
+          onCrawlStart?.();
+        } catch {
+          // 크롤링 enqueue 실패는 무시 (업로드는 성공)
+        }
+      }
+
       onSuccess?.();
     } catch {
       setError("Network error");

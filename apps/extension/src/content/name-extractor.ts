@@ -9,11 +9,17 @@ const NAME_SELECTORS = [
     ".prod-buy-header .prod-buy-header__title",
     "h1.prod-buy-header__title",
     "h2.prod-buy-header__title",
+    // service-worker.ts와 동기화된 셀렉터
+    ".prod-buy-header__title",
+    "h1.prod-title",
+    ".product-name h1",
     // Fallback selectors
     ".prod-buy-header [class*='title']",
     "[class*='product-title']",
     "[class*='productTitle']",
     "h1[class*='title']",
+    // 최종 폴백
+    "h1",
 ];
 
 export function extractProductName(document: Document): string | null {

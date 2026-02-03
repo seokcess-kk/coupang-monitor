@@ -302,3 +302,105 @@ tr:hover {
   color: white;
   border-color: var(--primary);
 }
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-text {
+  height: 16px;
+  width: 100px;
+}
+
+.skeleton-price {
+  height: 16px;
+  width: 70px;
+}
+
+.skeleton-badge {
+  height: 20px;
+  width: 50px;
+  border-radius: 12px;
+}
+
+.skeleton-button {
+  height: 26px;
+  width: 50px;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Crawl Status */
+.crawl-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #e8f4fd;
+  border: 1px solid #b3d7f5;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.crawl-status-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #b3d7f5;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.crawl-status-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.crawl-status-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.crawl-status-bar {
+  height: 4px;
+  background: #d0e8f8;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.crawl-status-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.crawl-status-failed {
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.ml-2 {
+  margin-left: 8px;
+}

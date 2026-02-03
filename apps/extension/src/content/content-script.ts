@@ -21,6 +21,11 @@ function randomDebounce(): number {
 // Wait for price elements to appear (max 3 seconds)
 async function waitForPriceElements(maxWaitMs: number = 3000): Promise<void> {
   const priceSelectors = [
+    // 최신 쿠팡 셀렉터
+    ".final-price-amount",
+    ".sales-price-amount",
+    ".price-amount",
+    // 기존 셀렉터
     ".prod-sale-price",
     ".total-price",
     "[class*='sale-price']",
