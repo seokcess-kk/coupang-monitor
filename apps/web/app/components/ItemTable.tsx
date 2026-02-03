@@ -37,7 +37,17 @@ export default function ItemTable({
 
   return (
     <div className="card" style={{ padding: 0, overflow: "auto" }}>
-      <table>
+      <table style={{ tableLayout: "fixed" }}>
+        <colgroup>
+          <col style={{ width: "36%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "8%" }} />
+        </colgroup>
         <thead>
           <tr>
             <th>Name</th>
@@ -46,7 +56,6 @@ export default function ItemTable({
             <th>30D Low</th>
             <th>Lowest Option</th>
             <th>Status</th>
-            <th>Variants</th>
             <th>Last Checked</th>
             <th>Actions</th>
           </tr>
@@ -54,9 +63,17 @@ export default function ItemTable({
         <tbody>
           {items.map((item) => (
             <tr key={item.id}>
-              <td>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <Link href={`/items/${item.id}`}>
+              <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.name}>
+                <div style={{ display: "flex", alignItems: "center", overflow: "hidden" }}>
+                  <Link
+                    href={`/items/${item.id}`}
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      display: "block"
+                    }}
+                  >
                     {item.name || "Unnamed"}
                   </Link>
                   <a
@@ -65,22 +82,22 @@ export default function ItemTable({
                     rel="noopener noreferrer"
                     className="icon-link"
                     title="Open in Coupang"
+                    style={{ flexShrink: 0 }}
                   >
                     🔗
                   </a>
                   {item.group && (
-                    <span className="text-sm text-secondary ml-2"> [{item.group}]</span>
+                    <span className="text-sm text-secondary ml-2" style={{ flexShrink: 0 }}> [{item.group}]</span>
                   )}
                 </div>
               </td>
-              <td className="price">{formatPrice(item.currentLow)}</td>
-              <td className="price">{formatPrice(item.low7d)}</td>
-              <td className="price">{formatPrice(item.low30d)}</td>
-              <td className="text-sm">{item.lowestVariant || "-"}</td>
-              <td><StatusBadge status={item.status} /></td>
-              <td>{item.variantCount}</td>
-              <td className="text-sm">{formatDate(item.lastCheckedAt)}</td>
-              <td>
+              <td className="price" style={{ whiteSpace: "nowrap" }}>{formatPrice(item.currentLow)}</td>
+              <td className="price" style={{ whiteSpace: "nowrap" }}>{formatPrice(item.low7d)}</td>
+              <td className="price" style={{ whiteSpace: "nowrap" }}>{formatPrice(item.low30d)}</td>
+              <td className="text-sm" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={item.lowestVariant || "-"}>{item.lowestVariant || "-"}</td>
+              <td style={{ whiteSpace: "nowrap" }}><StatusBadge status={item.status} /></td>
+              <td className="text-sm" style={{ whiteSpace: "nowrap" }}>{formatDate(item.lastCheckedAt)}</td>
+              <td style={{ whiteSpace: "nowrap" }}>
                 <button
                   onClick={() => handleDeleteClick(item.id, item.name)}
                   disabled={deletingId === item.id}
