@@ -51,13 +51,13 @@ export default function ItemTable({
         <thead>
           <tr>
             <th>Name</th>
-            <th>Current Low</th>
-            <th>7D Low</th>
-            <th>30D Low</th>
-            <th>Lowest Option</th>
-            <th>Status</th>
-            <th>Last Checked</th>
-            <th>Actions</th>
+            <th style={{ textAlign: "center" }}>Current Low</th>
+            <th style={{ textAlign: "center" }}>7D Low</th>
+            <th style={{ textAlign: "center" }}>30D Low</th>
+            <th style={{ textAlign: "center" }}>Lowest Option</th>
+            <th style={{ textAlign: "center" }}>Status</th>
+            <th style={{ textAlign: "center" }}>Last Checked</th>
+            <th style={{ textAlign: "center" }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -91,13 +91,13 @@ export default function ItemTable({
                   )}
                 </div>
               </td>
-              <td className="price" style={{ whiteSpace: "nowrap" }}>{formatPrice(item.currentLow)}</td>
-              <td className="price" style={{ whiteSpace: "nowrap" }}>{formatPrice(item.low7d)}</td>
-              <td className="price" style={{ whiteSpace: "nowrap" }}>{formatPrice(item.low30d)}</td>
-              <td className="text-sm" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={item.lowestVariant || "-"}>{item.lowestVariant || "-"}</td>
-              <td style={{ whiteSpace: "nowrap" }}><StatusBadge status={item.status} /></td>
-              <td className="text-sm" style={{ whiteSpace: "nowrap" }}>{formatDate(item.lastCheckedAt)}</td>
-              <td style={{ whiteSpace: "nowrap" }}>
+              <td className="price" style={{ whiteSpace: "nowrap", textAlign: "center" }}>{formatPrice(item.currentLow)}</td>
+              <td className="price" style={{ whiteSpace: "nowrap", textAlign: "center" }}>{formatPrice(item.low7d)}</td>
+              <td className="price" style={{ whiteSpace: "nowrap", textAlign: "center" }}>{formatPrice(item.low30d)}</td>
+              <td className="text-sm" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textAlign: "center" }} title={item.lowestVariant || "-"}>{item.lowestVariant || "-"}</td>
+              <td style={{ whiteSpace: "nowrap", textAlign: "center" }}><StatusBadge status={item.status} /></td>
+              <td className="text-sm" style={{ whiteSpace: "nowrap", textAlign: "center" }}>{formatDate(item.lastCheckedAt)}</td>
+              <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>
                 <button
                   onClick={() => handleDeleteClick(item.id, item.name)}
                   disabled={deletingId === item.id}
