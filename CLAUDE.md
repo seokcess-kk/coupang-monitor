@@ -213,3 +213,47 @@ See `.env.example` for required configuration:
 - `SCRAPER_RULES.md` — Detailed DOM price extraction and option handling rules
 - `EXTENSION_NOTES.md` — DOM strategy heuristics for sample pages
 - `URL_NORMALIZATION.md` — URL canonical form and dedup logic
+
+---
+
+## Decision Log
+
+프로젝트 진행 중 내려진 주요 결정사항. 새로운 결정이 있을 때마다 여기에 기록.
+
+| 날짜 | 결정 | 이유 |
+|------|------|------|
+| 2026-02-03 | DOM 기반 가격 추출 사용 (`extractPriceFromDOM`) | HTML 문자열 파싱(`extractPrice`)보다 실제 렌더링된 DOM에서 추출하는 것이 안정적 |
+| 2026-02-03 | 크롤 진행률은 현재 세션 기준으로 표시 | 24시간 전체가 아닌 현재 크롤 세션의 pending/done 비율이 사용자에게 더 직관적 |
+| 2026-02-03 | Stale job 복구 시간 10분 | Extension 크래시 시 너무 빠른 복구는 중복 실행 위험, 너무 느리면 크롤 지연 |
+
+## Known Issues & Solutions
+
+발생했던 문제와 해결 방법. 동일한 문제 재발 시 참조.
+
+### 쿠팡 DOM 선택자 변경으로 가격/상품명 추출 실패
+- **증상**: 가격이 null로 추출되거나 상품명이 비어있음
+- **원인**: 쿠팡이 HTML 구조/클래스명 변경
+- **해결**: `price-extractor.ts`, `name-extractor.ts`의 선택자 업데이트 후 CLAUDE.md의 "Coupang DOM Selectors" 섹션도 함께 수정
+- **날짜**: 2026-02-02
+
+### 크롤 진행률이 100%에서 시작하는 문제
+- **증상**: 새 크롤 시작 시 진행률이 0%가 아닌 100%로 표시
+- **원인**: 24시간 전체 Job 기준으로 계산하여 이전 완료된 Job이 포함됨
+- **해결**: `/api/jobs/status`에서 현재 세션(가장 최근 enqueue 이후)의 Job만 카운트하도록 수정
+- **날짜**: 2026-02-03
+
+### path alias `@/lib/...` import 오류
+- **증상**: `@/lib/format` 등 import 시 모듈을 찾을 수 없음
+- **원인**: `tsconfig.json`에 path alias 설정 누락
+- **해결**: `apps/web/tsconfig.json`에 `"paths": {"@/*": ["./*"]}` 추가
+- **날짜**: 2026-02-03
+
+## Project Rules
+
+코드 작성 시 지켜야 할 규칙들.
+
+- **가격 추출**: 항상 `extractPriceFromDOM()` 사용 (HTML 문자열 버전 `extractPrice()`는 미사용, 제거 가능)
+- **Job 상태 변경**: API endpoint를 통해서만 수행 (직접 DB 수정 금지)
+- **URL 저장**: 반드시 `normalizeUrl()` 통해 정규화 후 저장
+- **새 DOM 선택자 추가 시**: CLAUDE.md의 "Coupang DOM Selectors" 섹션 업데이트 필수
+- **환경변수 추가 시**: `.env.example` 파일에도 추가
