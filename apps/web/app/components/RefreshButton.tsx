@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-export default function RefreshButton() {
+interface RefreshButtonProps {
+  onCrawlStart?: () => void;
+  showToast?: (message: string, type: "success" | "error") => void;
+}
+
+export default function RefreshButton({ onCrawlStart, showToast }: RefreshButtonProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
@@ -20,6 +25,12 @@ export default function RefreshButton() {
       const data = await res.json();
       if (res.ok) {
         setResult(`Enqueued: ${data.enqueued}, Skipped: ${data.skipped}`);
+
+        // 작업이 enqueue된 경우에만 콜백 호출
+        if (data.enqueued > 0) {
+          onCrawlStart?.();
+          showToast?.("크롤링을 시작합니다...", "success");
+        }
       } else {
         setResult(data.error || "Failed");
       }

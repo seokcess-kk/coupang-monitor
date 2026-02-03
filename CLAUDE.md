@@ -139,6 +139,39 @@ The extension uses a priority-based strategy:
 2. Otherwise → use the final displayed price in the main price block, excluding percentages, unit prices ("100g당"), and coupon amounts
 3. Options are iterated via round-robin cursor (`variantCursor`), default 15 variants per run, with 300-800ms debounce between option clicks
 
+### Coupang DOM Selectors (2026-02 기준, 정상 작동 확인)
+
+**중요**: 쿠팡 페이지 HTML 구조가 변경되면 아래 선택자와 관련 파일을 업데이트해야 함.
+
+**상품명 추출** (`name-extractor.ts`):
+```
+우선순위:
+1. h1.product-title span.twc-font-bold  ← 현재 작동
+2. h1.product-title
+3. .prod-buy-header h1 (레거시)
+```
+- HTML 구조: `<h1 class="product-title ..."><span class="twc-font-bold">상품명</span></h1>`
+
+**가격 추출** (`price-extractor.ts`):
+```
+우선순위:
+1. .price-container .final-price-amount  ← 현재 작동 (최종가)
+2. .price-container .sales-price-amount  (판매가)
+3. .final-price-amount
+4. .sales-price-amount
+5. .prod-sale-price strong (레거시)
+```
+- HTML 구조: `<div class="price-amount final-price-amount">15,670원</div>`
+- 단위가격 제외: `.final-unit-price` (예: "100g당 522원")
+
+**품절 확인**:
+- 선택자: `.oos-label`, `.out-of-stock`, `[class*='sold-out']`
+- 구매 버튼 텍스트: "품절", "일시품절", "재입고" 포함 여부
+
+**관련 파일**:
+- `apps/extension/src/content/price-extractor.ts` — 가격 추출 로직
+- `apps/extension/src/content/name-extractor.ts` — 상품명 추출 로직
+
 ### URL Normalization (URL_NORMALIZATION.md)
 
 All user-provided URLs are normalized to canonical form before storage:

@@ -3,13 +3,16 @@
  */
 
 const NAME_SELECTORS = [
-    // Primary selectors for product title
+    // 최신 쿠팡 선택자 (2026-02 기준, 최우선)
+    "h1.product-title span.twc-font-bold",
+    "h1.product-title",
+    ".product-buy-header h1.product-title",
+    // 기존 선택자
     ".prod-buy-header h1",
     ".prod-buy-header h2",
     ".prod-buy-header .prod-buy-header__title",
     "h1.prod-buy-header__title",
     "h2.prod-buy-header__title",
-    // service-worker.ts와 동기화된 셀렉터
     ".prod-buy-header__title",
     "h1.prod-title",
     ".product-name h1",

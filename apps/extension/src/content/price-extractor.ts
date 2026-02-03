@@ -188,33 +188,30 @@ export function extractPriceFromDOM(document: Document): PriceResult {
   }
 
   // Priority B: Find main price block - expanded selector list
+  // 2026-02 기준 쿠팡 DOM 구조 반영
   const priceSelectors = [
-    // New Coupang selectors (최신 페이지 HTML에서 확인)
+    // 최신 쿠팡 선택자 (2026-02 기준, 최우선)
+    ".price-container .final-price-amount",
+    ".price-container .sales-price-amount",
+    ".final-price .final-price-amount",
+    ".sales-price .sales-price-amount",
     ".final-price-amount",
     ".sales-price-amount",
     ".price-amount.final-price-amount",
     ".price-amount.sales-price-amount",
-    ".final-price .price-amount",
-    ".sales-price .price-amount",
-    ".price-container .final-price-amount",
-    ".price-container .sales-price-amount",
-    // Primary selectors (기존)
+    // 기존 쿠팡 선택자 (레거시)
     ".prod-sale-price .total-price strong",
     ".prod-sale-price strong",
     ".total-price strong",
-    // Fallback selectors
     "[class*='sale-price'] strong",
     ".prod-price strong",
     "[class*='final-price'] strong",
     "[class*='finalPrice'] strong",
-    // Additional Coupang-specific selectors
     ".prod-coupon-price .total-price strong",
     ".prod-origin-price strong",
     "[class*='price-value']",
     "[class*='priceValue']",
-    // Rocket delivery price
     ".prod-pdd-price strong",
-    // Generic fallbacks
     ".price strong",
     "strong.price",
   ];

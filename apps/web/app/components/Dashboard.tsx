@@ -119,30 +119,36 @@ function DashboardContent() {
   };
 
   const filteredItems = useMemo(() => {
-    if (statusFilter === "ALL") return items;
+    if (statusFilter === "ALL") return items;  // UNKNOWN 포함
+    if (statusFilter === "PENDING") {
+      return items.filter((item) => item.status === "UNKNOWN");
+    }
     if (statusFilter === "ERROR") {
       return items.filter(
-        (item) => item.status !== "OK" && item.status !== "SOLD_OUT"
+        (item) => item.status !== "OK" && item.status !== "SOLD_OUT" && item.status !== "UNKNOWN"
       );
     }
     return items.filter((item) => item.status === statusFilter);
   }, [items, statusFilter]);
 
-  const stats = useMemo(() => {
-    return {
-      all: items.length,
-      ok: items.filter((i) => i.status === "OK").length,
-      sold_out: items.filter((i) => i.status === "SOLD_OUT").length,
-      error: items.filter((i) => i.status !== "OK" && i.status !== "SOLD_OUT")
-        .length,
-    };
-  }, [items]);
+  const stats = useMemo(() => ({
+    all: items.length,
+    pending: items.filter((i) => i.status === "UNKNOWN").length,
+    ok: items.filter((i) => i.status === "OK").length,
+    sold_out: items.filter((i) => i.status === "SOLD_OUT").length,
+    error: items.filter((i) =>
+      i.status !== "OK" && i.status !== "SOLD_OUT" && i.status !== "UNKNOWN"
+    ).length,
+  }), [items]);
 
   return (
     <main>
       <div className="toolbar" style={{ justifyContent: "space-between", flexWrap: 'wrap' }}>
         <div className="flex gap-2">
-          <RefreshButton />
+          <RefreshButton
+            onCrawlStart={startPolling}
+            showToast={showToast}
+          />
           <button
             className="btn btn-outline"
             onClick={() => setShowUpload(!showUpload)}
@@ -157,6 +163,12 @@ function DashboardContent() {
             onClick={() => setStatusFilter("ALL")}
           >
             전체 ({stats.all})
+          </button>
+          <button
+            className={`filter-btn ${statusFilter === "PENDING" ? "active" : ""}`}
+            onClick={() => setStatusFilter("PENDING")}
+          >
+            대기 중 ({stats.pending})
           </button>
           <button
             className={`filter-btn ${statusFilter === "OK" ? "active" : ""}`}
