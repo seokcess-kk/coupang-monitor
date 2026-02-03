@@ -2,13 +2,14 @@
 
 interface CrawlStatusProps {
   pending: number;
+  inProgress: number;
   done: number;
   failed: number;
   total: number;
 }
 
-export default function CrawlStatus({ pending, done, failed, total }: CrawlStatusProps) {
-  if (pending === 0) return null;
+export default function CrawlStatus({ pending, inProgress, done, failed, total }: CrawlStatusProps) {
+  if (pending === 0 && inProgress === 0) return null;
 
   const progress = total > 0 ? Math.round(((done + failed) / total) * 100) : 0;
 

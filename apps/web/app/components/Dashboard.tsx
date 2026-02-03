@@ -11,6 +11,7 @@ import type { ItemRow } from "@/lib/types";
 
 interface JobStatus {
   pending: number;
+  inProgress: number;
   done: number;
   failed: number;
   total: number;
@@ -21,7 +22,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [jobStatus, setJobStatus] = useState<JobStatus>({ pending: 0, done: 0, failed: 0, total: 0 });
+  const [jobStatus, setJobStatus] = useState<JobStatus>({ pending: 0, inProgress: 0, done: 0, failed: 0, total: 0 });
   const [isPolling, setIsPolling] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const { showToast } = useToast();
@@ -62,7 +63,7 @@ function DashboardContent() {
 
   // 크롤링 중일 때 자동 폴링
   useEffect(() => {
-    if (jobStatus.pending > 0 && !isPolling) {
+    if ((jobStatus.pending > 0 || jobStatus.inProgress > 0) && !isPolling) {
       setIsPolling(true);
     }
 
@@ -71,7 +72,7 @@ function DashboardContent() {
         const status = await fetchJobStatus();
         await fetchItems();
 
-        if (status && status.pending === 0) {
+        if (status && status.pending === 0 && status.inProgress === 0) {
           setIsPolling(false);
           if (pollingRef.current) {
             clearInterval(pollingRef.current);
@@ -88,7 +89,7 @@ function DashboardContent() {
         pollingRef.current = null;
       }
     };
-  }, [isPolling, jobStatus.pending, fetchJobStatus, fetchItems, showToast]);
+  }, [isPolling, jobStatus.pending, jobStatus.inProgress, fetchJobStatus, fetchItems, showToast]);
 
   const startPolling = useCallback(() => {
     setIsPolling(true);
@@ -195,6 +196,7 @@ function DashboardContent() {
       {isPolling && (
         <CrawlStatus
           pending={jobStatus.pending}
+          inProgress={jobStatus.inProgress}
           done={jobStatus.done}
           failed={jobStatus.failed}
           total={jobStatus.total}

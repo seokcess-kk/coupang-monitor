@@ -15,6 +15,7 @@ export async function GET() {
 
     const result = {
       pending: 0,
+      inProgress: 0,
       done: 0,
       failed: 0,
       total: 0,
@@ -26,6 +27,8 @@ export async function GET() {
 
       if (row.status === "PENDING") {
         result.pending = count;
+      } else if (row.status === "IN_PROGRESS") {
+        result.inProgress = count;
       } else if (row.status === "DONE") {
         result.done = count;
       } else if (row.status === "FAILED") {
