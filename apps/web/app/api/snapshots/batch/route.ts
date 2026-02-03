@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update item name if currently null and product_name was extracted
-    if (item.name === null && body.product_name) {
+    // Update item name if currently null/empty or "Unnamed" and product_name was extracted
+    if ((!item.name || item.name === "Unnamed") && body.product_name) {
       await prisma.item.update({
         where: { id: body.item_id },
         data: { name: body.product_name },
@@ -171,6 +171,20 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("Snapshot batch error:", err);
+
+    // Job이 있으면 FAILED 상태로 업데이트 (오류 발생 시 Job이 IN_PROGRESS로 고착되는 것 방지)
+    try {
+      const body = await request.clone().json().catch(() => null);
+      if (body?.job_id) {
+        await prisma.job.update({
+          where: { id: body.job_id },
+          data: { status: "FAILED" },
+        });
+      }
+    } catch {
+      // Job 업데이트 실패 시 무시 (이미 메인 오류가 발생한 상황)
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

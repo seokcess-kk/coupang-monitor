@@ -46,18 +46,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Skip items that already have a PENDING job
-    const pendingJobs = await prisma.job.findMany({
+    // Skip items that already have a PENDING or IN_PROGRESS job (중복 Job 방지)
+    const existingJobs = await prisma.job.findMany({
       where: {
         itemId: { in: items.map((i) => i.id) },
-        status: "PENDING",
+        status: { in: ["PENDING", "IN_PROGRESS"] },
       },
       select: { itemId: true },
     });
-    const pendingItemIds = new Set(pendingJobs.map((j) => j.itemId));
+    const existingItemIds = new Set(existingJobs.map((j) => j.itemId));
 
     const jobsToCreate = items
-      .filter((i) => !pendingItemIds.has(i.id))
+      .filter((i) => !existingItemIds.has(i.id))
       .map((i) => ({
         itemId: i.id,
         status: "PENDING",
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       enqueued: jobsToCreate.length,
-      skipped: pendingItemIds.size,
+      skipped: existingItemIds.size,
       total: items.length,
     });
   } catch (err) {

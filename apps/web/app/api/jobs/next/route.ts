@@ -11,6 +11,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // 10분 이상 IN_PROGRESS 상태인 Job을 PENDING으로 복구 (고착된 Job 자동 복구)
+    const staleTimeout = new Date(Date.now() - 10 * 60 * 1000);
+    const staleRecovered = await prisma.job.updateMany({
+      where: {
+        status: "IN_PROGRESS",
+        updatedAt: { lt: staleTimeout },
+      },
+      data: { status: "PENDING" },
+    });
+
+    if (staleRecovered.count > 0) {
+      console.log(`Recovered ${staleRecovered.count} stale IN_PROGRESS jobs`);
+    }
+
     // Find next pending job, ordered by scheduledFor
     const job = await prisma.job.findFirst({
       where: { status: "PENDING" },
