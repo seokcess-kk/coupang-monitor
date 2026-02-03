@@ -24,6 +24,7 @@ function DashboardContent() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [jobStatus, setJobStatus] = useState<JobStatus>({ pending: 0, inProgress: 0, done: 0, failed: 0, total: 0 });
   const [isPolling, setIsPolling] = useState(false);
+  const [expectedTotal, setExpectedTotal] = useState(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const { showToast } = useToast();
 
@@ -91,7 +92,8 @@ function DashboardContent() {
     };
   }, [isPolling, jobStatus.pending, jobStatus.inProgress, fetchJobStatus, fetchItems, showToast]);
 
-  const startPolling = useCallback(() => {
+  const startPolling = useCallback((enqueued: number) => {
+    setExpectedTotal(enqueued);
     setIsPolling(true);
     fetchJobStatus();
   }, [fetchJobStatus]);
@@ -198,20 +200,20 @@ function DashboardContent() {
             setShowUpload(false);
             showToast("Items uploaded successfully", "success");
           }}
-          onCrawlStart={() => {
-            startPolling();
+          onCrawlStart={(enqueued) => {
+            startPolling(enqueued);
             showToast("크롤링을 시작합니다...", "success");
           }}
         />
       )}
 
-      {isPolling && (
+      {isPolling && expectedTotal > 0 && (
         <CrawlStatus
           pending={jobStatus.pending}
           inProgress={jobStatus.inProgress}
-          done={jobStatus.done}
+          done={Math.max(0, expectedTotal - jobStatus.pending - jobStatus.inProgress)}
           failed={jobStatus.failed}
-          total={jobStatus.total}
+          total={expectedTotal}
         />
       )}
 

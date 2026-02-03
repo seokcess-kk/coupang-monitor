@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 interface RefreshButtonProps {
-  onCrawlStart?: () => void;
+  onCrawlStart?: (enqueued: number) => void;
   showToast?: (message: string, type: "success" | "error") => void;
 }
 
@@ -28,7 +28,7 @@ export default function RefreshButton({ onCrawlStart, showToast }: RefreshButton
 
         // 작업이 enqueue된 경우에만 콜백 호출
         if (data.enqueued > 0) {
-          onCrawlStart?.();
+          onCrawlStart?.(data.enqueued);
           showToast?.("크롤링을 시작합니다...", "success");
         }
       } else {

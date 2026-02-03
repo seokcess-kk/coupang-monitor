@@ -14,7 +14,7 @@ interface UploadResult {
 
 interface CsvUploadProps {
   onSuccess?: () => void;
-  onCrawlStart?: () => void;
+  onCrawlStart?: (enqueued: number) => void;
 }
 
 export default function CsvUpload({ onSuccess, onCrawlStart }: CsvUploadProps) {
@@ -58,12 +58,17 @@ export default function CsvUpload({ onSuccess, onCrawlStart }: CsvUploadProps) {
       // 새로 생성된 items가 있으면 자동 크롤링 시작
       if (data.created > 0) {
         try {
-          await fetch("/api/jobs/enqueue", {
+          const enqueueRes = await fetch("/api/jobs/enqueue", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ mode: "all", reason: "manual" }),
           });
-          onCrawlStart?.();
+          if (enqueueRes.ok) {
+            const enqueueData = await enqueueRes.json();
+            if (enqueueData.enqueued > 0) {
+              onCrawlStart?.(enqueueData.enqueued);
+            }
+          }
         } catch {
           // 크롤링 enqueue 실패는 무시 (업로드는 성공)
         }
