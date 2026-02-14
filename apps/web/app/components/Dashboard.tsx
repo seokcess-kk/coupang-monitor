@@ -156,10 +156,7 @@ function DashboardContent() {
     <main>
       <div className="toolbar" style={{ justifyContent: "space-between", flexWrap: 'wrap' }}>
         <div className="flex gap-2">
-          <RefreshButton
-            onCrawlStart={startPolling}
-            showToast={showToast}
-          />
+          <RefreshButton />
           <button
             className="btn btn-primary"
             onClick={() => setShowAddModal(true)}
