@@ -8,6 +8,14 @@ import { NextResponse } from 'next/server';
 const SCRAPER_URL = process.env.SCRAPER_URL || 'http://localhost:3001';
 
 export async function GET() {
+  // Production(Vercel)에서는 로컬 스크래퍼 사용 불가
+  if (process.env.VERCEL) {
+    return NextResponse.json({
+      running: false,
+      error: 'Scraper not available in production',
+    });
+  }
+
   try {
     const res = await fetch(`${SCRAPER_URL}/progress`, {
       cache: 'no-store',
