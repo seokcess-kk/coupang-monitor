@@ -6,6 +6,8 @@ import ItemTableSkeleton from "./ItemTableSkeleton";
 import CsvUpload from "./CsvUpload";
 import CrawlStatus from "./CrawlStatus";
 import RefreshButton from "./RefreshButton";
+import AddItemModal from "./AddItemModal";
+import EditItemModal from "./EditItemModal";
 import { ToastProvider, useToast } from "./Toast";
 import type { ItemRow } from "@/lib/types";
 
@@ -21,6 +23,8 @@ function DashboardContent() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<ItemRow | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [jobStatus, setJobStatus] = useState<JobStatus>({ pending: 0, inProgress: 0, done: 0, failed: 0, total: 0 });
   const [isPolling, setIsPolling] = useState(false);
@@ -29,15 +33,20 @@ function DashboardContent() {
   const { showToast } = useToast();
 
   const fetchItems = useCallback(async () => {
+    console.log("[Dashboard] fetchItems called");
     try {
       const res = await fetch("/api/items");
+      console.log("[Dashboard] fetch response:", res.status);
       if (res.ok) {
         const data = await res.json();
+        console.log("[Dashboard] items loaded:", data.length);
         setItems(data);
       }
-    } catch {
+    } catch (err) {
+      console.error("[Dashboard] fetch error:", err);
       showToast("Failed to fetch items", "error");
     } finally {
+      console.log("[Dashboard] setting loading to false");
       setLoading(false);
     }
   }, [showToast]);
@@ -152,10 +161,16 @@ function DashboardContent() {
             showToast={showToast}
           />
           <button
+            className="btn btn-primary"
+            onClick={() => setShowAddModal(true)}
+          >
+            + 상품 추가
+          </button>
+          <button
             className="btn btn-outline"
             onClick={() => setShowUpload(!showUpload)}
           >
-            {showUpload ? "Hide Upload" : "Upload CSV"}
+            {showUpload ? "닫기" : "CSV 업로드"}
           </button>
         </div>
 
@@ -220,8 +235,31 @@ function DashboardContent() {
       {loading ? (
         <ItemTableSkeleton />
       ) : (
-        <ItemTable items={filteredItems} onDelete={handleDelete} />
+        <ItemTable
+          items={filteredItems}
+          onDelete={handleDelete}
+          onEdit={(item) => setEditingItem(item)}
+        />
       )}
+
+      <AddItemModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          fetchItems();
+          showToast("상품이 추가되었습니다", "success");
+        }}
+      />
+
+      <EditItemModal
+        isOpen={!!editingItem}
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSuccess={() => {
+          fetchItems();
+          showToast("상품 정보가 수정되었습니다", "success");
+        }}
+      />
     </main>
   );
 }

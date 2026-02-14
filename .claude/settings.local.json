@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test:*)",
+      "Bash(pnpm --filter @pricewatch/db generate:*)",
+      "Bash(pnpm scraper:run:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl:*)",
+      "Bash(docker:*)",
+      "Bash(SCRAPER_HEADLESS=false pnpm scraper:run:*)",
+      "Bash(pnpm add:*)",
+      "Bash(cmd.exe /c start-edge-debug.bat)",
+      "Bash(pnpm --filter @pricewatch/scraper build:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c \"taskkill /PID 21460 /F\")",
+      "Bash(pnpm scraper:server:*)",
+      "Bash(pnpm scraper:dev:*)",
+      "Bash(cmd /c \"taskkill /PID 9292 /F\")",
+      "Bash(powershell:*)",
+      "Bash(scripts/start-chrome-debug.bat:*)",
+      "Bash(cmd /c \"start chrome --remote-debugging-port=9222\")",
+      "Bash(cmd /c \"\"\"C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\"\" --remote-debugging-port=9222\")",
+      "Bash(cmd /c \"start \"\"\"\" \"\"C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe\"\" --remote-debugging-port=9222 --user-data-dir=\"\"C:\\\\Users\\\\assag\\\\edge-debug-profile\"\"\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add item management UI and scraper integration\n\n- Add AddItemModal for individual item creation\n- Add EditItemModal for item info editing\n- Add PriceChart component for price trend visualization\n- Integrate RefreshButton with scraper trigger API\n- Add scraper server with CDP mode for reliable scraping\n- Add PDCA documentation for button functionality review\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git rebase:*)",
+      "Bash(GIT_EDITOR=true git rebase:*)"
+    ]
+  }
+}

@@ -8,10 +8,12 @@ import { StatusBadge } from "./StatusBadge";
 
 export default function ItemTable({
   items,
-  onDelete
+  onDelete,
+  onEdit,
 }: {
   items: ItemRow[];
   onDelete: (id: string) => void;
+  onEdit: (item: ItemRow) => void;
 }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -39,14 +41,14 @@ export default function ItemTable({
     <div className="card" style={{ padding: 0, overflow: "auto" }}>
       <table style={{ tableLayout: "fixed" }}>
         <colgroup>
-          <col style={{ width: "36%" }} />
+          <col style={{ width: "30%" }} />
           <col style={{ width: "10%" }} />
           <col style={{ width: "10%" }} />
           <col style={{ width: "10%" }} />
-          <col style={{ width: "8%" }} />
-          <col style={{ width: "8%" }} />
           <col style={{ width: "10%" }} />
           <col style={{ width: "8%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "12%" }} />
         </colgroup>
         <thead>
           <tr>
@@ -98,21 +100,21 @@ export default function ItemTable({
               <td style={{ whiteSpace: "nowrap", textAlign: "center" }}><StatusBadge status={item.status} /></td>
               <td className="text-sm" style={{ whiteSpace: "nowrap", textAlign: "center" }}>{formatDate(item.lastCheckedAt)}</td>
               <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>
-                <button
-                  onClick={() => handleDeleteClick(item.id, item.name)}
-                  disabled={deletingId === item.id}
-                  style={{
-                    padding: "4px 8px",
-                    fontSize: "12px",
-                    backgroundColor: deletingId === item.id ? "#ccc" : "#dc3545",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: deletingId === item.id ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {deletingId === item.id ? "삭제 중..." : "삭제"}
-                </button>
+                <div className="action-buttons">
+                  <button
+                    className="btn btn-sm btn-edit"
+                    onClick={() => onEdit(item)}
+                  >
+                    수정
+                  </button>
+                  <button
+                    className="btn btn-sm btn-delete"
+                    onClick={() => handleDeleteClick(item.id, item.name)}
+                    disabled={deletingId === item.id}
+                  >
+                    {deletingId === item.id ? "..." : "삭제"}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

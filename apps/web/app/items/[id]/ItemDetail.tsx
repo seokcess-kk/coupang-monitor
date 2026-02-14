@@ -2,9 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { ItemData } from "@/lib/types";
 import { formatPrice, formatDateFull as formatDate } from "@/lib/format";
 import { StatusBadge } from "@/app/components/StatusBadge";
+
+const PriceChart = dynamic(() => import("@/app/components/PriceChart"), {
+  ssr: false,
+  loading: () => <div className="chart-empty">Loading chart...</div>,
+});
 
 export default function ItemDetail({ itemId }: { itemId: string }) {
   const [item, setItem] = useState<ItemData | null>(null);
@@ -78,10 +84,16 @@ export default function ItemDetail({ itemId }: { itemId: string }) {
         </div>
       </div>
 
+      {/* Price Chart */}
+      <div className="card">
+        <h3 style={{ marginBottom: 16 }}>가격 추이</h3>
+        <PriceChart snapshots={item.snapshots} />
+      </div>
+
       {/* Variants Table */}
       <div className="card" style={{ padding: 0, overflow: "auto" }}>
         <div style={{ padding: "16px 16px 0" }}>
-          <h3>Variants ({item.variants.length})</h3>
+          <h3>옵션 ({item.variants.length})</h3>
         </div>
         <table>
           <thead>

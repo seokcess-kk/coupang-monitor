@@ -9,7 +9,10 @@
     "test:coverage": "vitest run --coverage",
     "lint": "pnpm -r lint",
     "db:migrate": "pnpm --filter @pricewatch/db migrate:dev",
-    "db:studio": "pnpm --filter @pricewatch/db studio"
+    "db:studio": "pnpm --filter @pricewatch/db studio",
+    "scraper:run": "pnpm --filter @pricewatch/scraper scraper:run",
+    "scraper:dev": "pnpm --filter @pricewatch/scraper dev",
+    "scraper:build": "pnpm --filter @pricewatch/scraper build"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

@@ -120,3 +120,44 @@ export async function DELETE(
     );
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { name, group, memo } = body;
+
+    // Check if item exists
+    const item = await prisma.item.findUnique({
+      where: { id },
+    });
+
+    if (!item) {
+      return NextResponse.json(
+        { error: "Item not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update item
+    const updated = await prisma.item.update({
+      where: { id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(group !== undefined && { group }),
+        ...(memo !== undefined && { memo }),
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error("Item update error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

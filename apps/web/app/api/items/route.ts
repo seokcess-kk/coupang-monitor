@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@pricewatch/db";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma, normalizeUrl } from "@pricewatch/db";
 import { computeItemStats } from "@/lib/price-calculation";
 
 export async function GET() {
@@ -68,6 +68,63 @@ export async function GET() {
     return NextResponse.json(result);
   } catch (err) {
     console.error("Items list error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { url, name, group, memo } = body;
+
+    if (!url || typeof url !== "string") {
+      return NextResponse.json(
+        { error: "URL is required" },
+        { status: 400 }
+      );
+    }
+
+    // Normalize URL
+    let normalized;
+    try {
+      normalized = normalizeUrl(url);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Invalid URL";
+      return NextResponse.json(
+        { error: message },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate
+    const existing = await prisma.item.findUnique({
+      where: { dedupeKey: normalized.dedupeKey },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "This item already exists", existingId: existing.id },
+        { status: 409 }
+      );
+    }
+
+    // Create item
+    const item = await prisma.item.create({
+      data: {
+        url: normalized.url,
+        dedupeKey: normalized.dedupeKey,
+        name: name || null,
+        group: group || null,
+        memo: memo || null,
+      },
+    });
+
+    return NextResponse.json(item, { status: 201 });
+  } catch (err) {
+    console.error("Item create error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -4,6 +4,7 @@ export interface ItemRow {
   name: string | null;
   url: string;
   group: string | null;
+  memo: string | null;
   currentLow: number | null;
   lowestVariant: string | null;
   low7d: number | null;
